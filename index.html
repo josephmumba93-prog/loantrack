@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoanTrack — Credit Management System</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f8f8f6;--surface:#ffffff;--surface2:#f1f0eb;
+    --border:#e2e1db;--border2:#c8c7c0;
+    --text:#1a1a18;--text2:#5f5e5a;--text3:#9c9a92;
+    --blue:#185FA5;--blue-light:#E6F1FB;--blue-dark:#0C447C;
+    --green:#3B6D11;--green-light:#EAF3DE;
+    --amber:#854F0B;--amber-light:#FAEEDA;
+    --red:#791F1F;--red-light:#FCEBEB;
+    --purple:#534AB7;--purple-light:#EEEDFE;
+    --teal:#0F6E56;--teal-light:#E1F5EE;
+    --radius:8px;--radius-lg:12px;
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+  a{color:var(--blue);text-decoration:none}
+
+  /* Layout */
+  .app-shell{display:flex;min-height:100vh}
+  .sidebar{width:220px;background:var(--surface);border-right:0.5px solid var(--border);
+    padding:20px 0;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh}
+  .main{flex:1;padding:24px;overflow-x:hidden}
+  .brand{padding:0 20px 20px;border-bottom:0.5px solid var(--border);margin-bottom:12px}
+  .brand-name{font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.3px}
+  .brand-sub{font-size:11px;color:var(--text3);margin-top:2px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;
+    font-size:13px;color:var(--text2);border-left:2px solid transparent;transition:all .15s}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{background:var(--blue-light);color:var(--blue-dark);border-left-color:var(--blue);font-weight:500}
+  .nav-icon{font-size:16px;width:18px;text-align:center}
+  .nav-section{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.08em;
+    text-transform:uppercase;padding:16px 20px 6px}
+  .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:0.5px solid var(--border);
+    font-size:11px;color:var(--text3)}
+
+  /* Pages */
+  .page{display:none}.page.active{display:block}
+  .page-header{margin-bottom:20px}
+  .page-title{font-size:22px;font-weight:600;color:var(--text)}
+  .page-sub{font-size:13px;color:var(--text3);margin-top:3px}
+
+  /* Stats grid */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);
+    padding:16px 18px}
+  .stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+  .stat-val{font-size:20px;font-weight:600;line-height:1;margin-bottom:4px}
+  .stat-sub{font-size:11px;color:var(--text3)}
+  .stat.blue .stat-val{color:var(--blue)}
+  .stat.green .stat-val{color:var(--green)}
+  .stat.amber .stat-val{color:var(--amber)}
+  .stat.red .stat-val{color:var(--red)}
+  .stat.purple .stat-val{color:var(--purple)}
+  .stat.teal .stat-val{color:var(--teal)}
+
+  /* Cards */
+  .card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+  .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .card-title{font-size:15px;font-weight:500}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  /* Table */
+  .tbl-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:0.5px solid var(--border)}
+  table{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface)}
+  thead{background:var(--surface2)}
+  th{text-align:left;padding:10px 12px;border-bottom:0.5px solid var(--border);
+    color:var(--text2);font-weight:500;font-size:11px;white-space:nowrap;position:sticky;top:0;background:var(--surface2)}
+  td{padding:10px 12px;border-bottom:0.5px solid var(--border);vertical-align:middle;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:var(--surface2)}
+  .overdue-row td{background:#fffaf5}
+
+  /* Badges */
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+  .badge-repay{background:var(--blue-light);color:var(--blue-dark)}
+  .badge-done{background:var(--green-light);color:var(--green)}
+  .badge-cancel{background:#f1f0eb;color:#444441}
+  .badge-default{background:var(--red-light);color:var(--red)}
+  .badge-overdue{background:var(--amber-light);color:var(--amber)}
+  .collat-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;
+    background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)}
+
+  /* Toolbar */
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .toolbar input[type=text],.toolbar select{
+    height:34px;padding:0 10px;border:0.5px solid var(--border2);border-radius:var(--radius);
+    background:var(--surface);color:var(--text);font-size:13px;outline:none}
+  .toolbar input[type=text]:focus,.toolbar select:focus{border-color:var(--blue)}
+  .toolbar input[type=text]{width:200px}
+
+  /* Buttons */
+  .btn{padding:7px 14px;border:0.5px solid var(--border2);border-radius:var(--radius);
+    cursor:pointer;font-size:13px;background:var(--surface);color:var(--text);
+    display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+  .btn:hover{background:var(--surface2)}
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn-primary:hover{background:var(--blue-dark)}
+  .btn-sm{padding:4px 9px;font-size:11px}
+  .btn-danger{border-color:#f0c0c0;color:var(--red);background:transparent}
+  .btn-danger:hover{background:var(--red-light)}
+
+  /* Forms */
+  .form-section{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;
+    letter-spacing:.06em;margin:20px 0 10px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .form-row.full{grid-template-columns:1fr}
+  .form-group label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;font-weight:500}
+  .form-group input,.form-group select,.form-group textarea{
+    width:100%;height:36px;padding:0 11px;border:0.5px solid var(--border2);
+    border-radius:var(--radius);background:var(--surface);color:var(--text);
+    font-size:13px;outline:none;transition:border .15s}
+  .form-group input:focus,.form-group select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+  .form-group input[readonly]{background:var(--surface2);color:var(--text3);cursor:default}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;
+    padding-top:16px;border-top:0.5px solid var(--border)}
+
+  /* Modal */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
+    align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+  .modal-backdrop.open{display:flex}
+  .modal{background:var(--surface);border-radius:var(--radius-lg);border:0.5px solid var(--border);
+    padding:24px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto}
+  .modal-title{font-size:16px;font-weight:600;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+  .modal-sub{font-size:12px;color:var(--text3);margin-bottom:20px}
+  .modal-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;line-height:1;padding:0}
+  .modal-close:hover{color:var(--text)}
+
+  /* Progress bars */
+  .progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:6px}
+  .progress-fill{height:100%;border-radius:3px;transition:width .3s}
+
+  /* Loan detail panel */
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .detail-item label{font-size:11px;color:var(--text3);display:block;margin-bottom:2px}
+  .detail-item span{font-size:13px;font-weight:500}
+
+  /* Alert */
+  .alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:16px;border:0.5px solid}
+  .alert-success{background:var(--green-light);color:var(--green);border-color:#b0d880}
+  .alert-error{background:var(--red-light);color:var(--red);border-color:#f0b0b0}
+
+  /* Empty state */
+  .empty{text-align:center;padding:48px 20px;color:var(--text3)}
+  .empty-icon{font-size:36px;margin-bottom:12px}
+  .empty-title{font-size:15px;color:var(--text2);font-weight:500;margin-bottom:6px}
+
+  /* Print */
+  @media print{
+    .sidebar{display:none}.main{padding:0}
+    .toolbar,.btn,.btn-sm,.btn-danger,.form-actions{display:none}
+    .tbl-wrap{border:none}
+    table{font-size:11px}
+  }
+  @media(max-width:768px){
+    .app-shell{flex-direction:column}
+    .sidebar{width:100%;height:auto;position:relative;flex-direction:row;flex-wrap:wrap;padding:10px}
+    .brand{border:none;padding:0 10px 10px;width:100%}
+    .nav-item{padding:7px 12px;border-left:none;border-bottom:2px solid transparent;font-size:12px}
+    .nav-item.active{border-left-color:transparent;border-bottom-color:var(--blue)}
+    .nav-section{display:none}
+    .sidebar-footer{display:none}
+    .main{padding:14px}
+    .two-col{grid-template-columns:1fr}
+    .form-row{grid-template-columns:1fr}
+    .stat-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-name">&#128200; LoanTrack</div>
+      <div class="brand-sub">Credit Management System</div>
+    </div>
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">&#9732;</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('loans')">
+      <span class="nav-icon">&#128196;</span> Loan records
+    </div>
+    <div class="nav-item" onclick="showPage('add')">
+      <span class="nav-icon">&#43;</span> New loan
+    </div>
+    <div class="nav-section">Reports</div>
+    <div class="nav-item" onclick="exportCSV()">
+      <span class="nav-icon">&#8659;</span> Export to CSV
+    </div>
+    <div class="nav-item" onclick="window.print()">
+      <span class="nav-icon">&#128438;</span> Print report
+    </div>
+    <div class="sidebar-footer">
+      <div id="sidebar-date"></div>
+      <div style="margin-top:4px">v1.0 &mdash; All rights reserved</div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub" id="dash-sub"></div>
+      </div>
+      <div class="stat-grid" id="stats-grid"></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Loan status breakdown</span></div>
+          <div id="status-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Collateral distribution</span></div>
+          <div id="collat-chart"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent loans</span>
+          <button class="btn btn-sm" onclick="showPage('loans')">View all</button>
+        </div>
+        <div id="recent-list"></div>
+      </div>
+    </div>
+
+    <!-- LOANS TABLE -->
+    <div id="page-loans" class="page">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="page-title">Loan records</div>
+          <div class="page-sub" id="loans-count"></div>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('add')">&#43; New loan</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="search-input" placeholder="&#128269; Search name, ID, loan ID&hellip;" oninput="renderTable()">
+        <select id="filter-status" onchange="renderTable()">
+          <option value="">All statuses</option>
+          <option value="In-Repayment">In-Repayment</option>
+          <option value="Completed">Completed</option>
+          <option value="Defaulted">Defaulted</option>
+          <option value="Canceled">Canceled</option>
+          <option value="Overdue">Overdue</option>
+        </select>
+        <select id="filter-collat" onchange="renderTable()">
+          <option value="">All collateral</option>
+          <option value="Car">Car</option>
+          <option value="House">House</option>
+          <option value="TV">TV</option>
+          <option value="Laptop">Laptop</option>
+        </select>
+        <select id="filter-mgr" onchange="renderTable()">
+          <option value="">All managers</option>
+        </select>
+        <button class="btn btn-sm" onclick="clearFilters()">Clear filters</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Borrower name</th>
+              <th>Identity ID</th>
+              <th>Loan ID</th>
+              <th>Amount (ZMW)</th>
+              <th>Rate</th>
+              <th>Interest (ZMW)</th>
+              <th>Date issued</th>
+              <th>Due date</th>
+              <th>Days elapsed</th>
+              <th>Status</th>
+              <th>Collateral</th>
+              <th>Credit manager</th>
+              <th>Manager ID</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="loans-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADD LOAN -->
+    <div id="page-add" class="page">
+      <div class="page-header">
+        <div class="page-title">New loan</div>
+        <div class="page-sub">Fill in all fields below to register a new loan</div>
+      </div>
+      <div id="add-alert"></div>
+      <div class="card" style="max-width:640px">
+        <div class="form-section">Borrower information</div>
+        <div class="form-row">
+          <div class="form-group"><label>Full name *</label><input id="f-name" type="text" placeholder="e.g. James Mwale"></div>
+          <div class="form-group"><label>Identity ID / NRC *</label><input id="f-nid" type="text" placeholder="e.g. 654321/10/1"></div>
+        </div>
+        <div class="form-section">Loan details</div>
+        <div class="form-row">
+          <div class="form-group"><label>Loan ID</label><input id="f-lid" type="text" readonly></div>
+          <div class="form-group"><label>Principal amount (ZMW) *</label><input id="f-amount" type="number" min="0" step="0.01" placeholder="e.g. 15000" oninput="calcInterest('f')"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Interest rate (%) *</label><input id="f-rate" type="number" min="0" step="0.1" placeholder="e.g. 12" oninput="calcInterest('f')"></div>
+          <div class="form-group"><label>Interest amount (ZMW)</label><input id="f-interest" type="text" readonly placeholder="Auto-calculated"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Date issued *</label><input id="f-issued" type="date"></div>
+          <div class="form-group"><label>Loan due date *</label><input id="f-due" type="date"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Loan status</label>
+            <select id="f-status">
+              <option value="In-Repayment">In-Repayment</option>
+              <option value="Completed">Completed</option>
+              <option value="Canceled">Canceled</option>
+              <option value="Defaulted">Defaulted</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Collateral</label>
+            <select id="f-collat">
+              <option>Car</option><option>House</option><option>TV</option><option>Laptop</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-section">Credit manager</div>
+        <div class="form-row">
+          <div class="form-group"><label>Manager name *</label><input id="f-mgr" type="text" placeholder="e.g. Grace Phiri"></div>
+          <div class="form-group"><label>Manager ID *</label><input id="f-mgrid" type="text" placeholder="e.g. CM-001"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" onclick="showPage('loans')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveLoan()">&#10003; Save loan</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-backdrop" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">
+      Edit loan record
+      <button class="modal-close" onclick="closeEdit()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-sub" id="edit-sub">Update the loan details below</div>
+    <div class="form-section">Borrower information</div>
+    <div class="form-row">
+      <div class="form-group"><label>Full name</label><input id="e-name" type="text"></div>
+      <div class="form-group"><label>Identity ID / NRC</label><input id="e-nid" type="text"></div>
+    </div>
+    <div class="form-section">Loan details</div>
+    <div class="form-row">
+      <div class="form-group"><label>Principal amount (ZMW)</label><input id="e-amount" type="number" oninput="calcInterest('e')"></div>
+      <div class="form-group"><label>Interest rate (%)</label><input id="e-rate" type="number" oninput="calcInterest('e')"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Interest amount (ZMW)</label><input id="e-interest" type="text" readonly></div>
+      <div class="form-group"><label>Status</label>
+        <select id="e-status">
+          <option value="In-Repayment">In-Repayment</option>
+          <option value="Completed">Completed</option>
+          <option value="Canceled">Canceled</option>
+          <option value="Defaulted">Defaulted</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date issued</label><input id="e-issued" type="date"></div>
+      <div class="form-group"><label>Due date</label><input id="e-due" type="date"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Collateral</label>
+        <select id="e-collat"><option>Car</option><option>House</option><option>TV</option><option>Laptop</option></select>
+      </div>
+      <div class="form-group"><label>Manager name</label><input id="e-mgr" type="text"></div>
+    </div>
+    <div class="form-row full">
+      <div class="form-group"><label>Manager ID</label><input id="e-mgrid" type="text"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete()">&#128465; Delete</button>
+      <button class="btn" onclick="closeEdit()">Cancel</button>
+      <button class="btn btn-primary" onclick="updateLoan()">&#10003; Update loan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const today = new Date();
+today.setHours(0,0,0,0);
+
+let editIdx = null;
+
+let loans = [
+  {name:'Chanda Mutale',nid:'123456/10/1',lid:'LN-2025-001',amount:25000,rate:15,issued:'2024-09-01',due:'2025-03-01',status:'Completed',collat:'Car',mgr:'Grace Phiri',mgrid:'CM-001'},
+  {name:'Bwalya Tembo',nid:'234567/20/2',lid:'LN-2025-002',amount:18000,rate:12,issued:'2024-10-15',due:'2025-07-15',status:'In-Repayment',collat:'House',mgr:'Peter Banda',mgrid:'CM-002'},
+  {name:'Mwila Kabwe',nid:'345678/30/3',lid:'LN-2025-003',amount:8000,rate:18,issued:'2024-07-01',due:'2024-12-31',status:'Defaulted',collat:'TV',mgr:'Grace Phiri',mgrid:'CM-001'},
+  {name:'Nsama Zulu',nid:'456789/40/4',lid:'LN-2025-004',amount:45000,rate:10,issued:'2024-11-01',due:'2025-11-01',status:'In-Repayment',collat:'House',mgr:'Alice Mumba',mgrid:'CM-003'},
+  {name:'Kapasa Mwamba',nid:'567890/50/5',lid:'LN-2025-005',amount:5000,rate:20,issued:'2024-06-01',due:'2024-09-01',status:'Canceled',collat:'Laptop',mgr:'Peter Banda',mgrid:'CM-002'},
+  {name:'Lubinda Phiri',nid:'678901/60/6',lid:'LN-2025-006',amount:32000,rate:14,issued:'2024-12-01',due:'2025-12-01',status:'In-Repayment',collat:'Car',mgr:'Alice Mumba',mgrid:'CM-003'},
+  {name:'Thandiwe Nkonde',nid:'789012/70/7',lid:'LN-2025-007',amount:12000,rate:16,issued:'2024-08-15',due:'2025-02-15',status:'Defaulted',collat:'TV',mgr:'Grace Phiri',mgrid:'CM-001'},
+  {name:'Mutinta Hakainde',nid:'890123/80/8',lid:'LN-2025-008',amount:60000,rate:11,issued:'2025-01-10',due:'2026-01-10',status:'In-Repayment',collat:'House',mgr:'Peter Banda',mgrid:'CM-002'},
+];
+loans.forEach(l=>{ l.interest = parseFloat((l.amount * l.rate / 100).toFixed(2)); });
+
+// ─── HELPERS ────────────────────────────────────────────
+const fmt = n => 'ZMW ' + parseFloat(n).toLocaleString('en-ZM',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtShort = n => {
+  if(n>=1000000) return 'ZMW '+(n/1000000).toFixed(2)+'M';
+  if(n>=1000) return 'ZMW '+(n/1000).toFixed(1)+'K';
+  return 'ZMW '+n.toFixed(2);
+};
+const dateStr = d => {
+  if(!d) return '—';
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+};
+const daysElapsed = issued => {
+  if(!issued) return 0;
+  const d = Math.floor((today - new Date(issued+'T00:00:00'))/(86400000));
+  return d < 0 ? 0 : d;
+};
+const isOverdue = l => l.status==='In-Repayment' && l.due && new Date(l.due+'T00:00:00') < today;
+const effectiveStatus = l => isOverdue(l) ? 'Overdue' : l.status;
+
+function statusBadge(l){
+  const s = effectiveStatus(l);
+  const cls = {Overdue:'badge-overdue','In-Repayment':'badge-repay',Completed:'badge-done',Canceled:'badge-cancel',Defaulted:'badge-default'};
+  return `<span class="badge ${cls[s]||''}">${s}</span>`;
+}
+
+function nextLoanId(){
+  const nums = loans.map(l=>{ const m=l.lid.match(/(\d+)$/); return m?+m[1]:0; });
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return 'LN-2025-' + String(next).padStart(3,'0');
+}
+
+function calcInterest(prefix){
+  const a = parseFloat(document.getElementById(prefix+'-amount').value)||0;
+  const r = parseFloat(document.getElementById(prefix+'-rate').value)||0;
+  const el = document.getElementById(prefix+'-interest');
+  if(el) el.value = a && r ? (a*r/100).toFixed(2) : '';
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const navMap={dashboard:0,loans:1,add:3};
+  const navItems=document.querySelectorAll('.nav-item');
+  if(navMap[p]!==undefined) navItems[navMap[p]].classList.add('active');
+  if(p==='dashboard') renderDashboard();
+  if(p==='loans'){renderTable();renderMgrFilter();}
+  if(p==='add'){
+    document.getElementById('f-lid').value = nextLoanId();
+    document.getElementById('f-issued').value = today.toISOString().split('T')[0];
+    document.getElementById('add-alert').innerHTML='';
+  }
+}
+
+// ─── DASHBOARD ──────────────────────────────────────────
+function renderDashboard(){
+  document.getElementById('dash-sub').textContent =
+    today.toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const total = loans.reduce((s,l)=>s+l.amount,0);
+  const totalInt = loans.reduce((s,l)=>s+l.interest,0);
+  const completed = loans.filter(l=>l.status==='Completed');
+  const collected = completed.reduce((s,l)=>s+l.amount+l.interest,0);
+  const overdueLoans = loans.filter(l=>isOverdue(l));
+  const overdueAmt = overdueLoans.reduce((s,l)=>s+l.amount,0);
+  const repayLoans = loans.filter(l=>l.status==='In-Repayment'&&!isOverdue(l));
+  const repayAmt = repayLoans.reduce((s,l)=>s+l.amount,0);
+  const defLoans = loans.filter(l=>l.status==='Defaulted');
+  const defAmt = defLoans.reduce((s,l)=>s+l.amount,0);
+  const cancelLoans = loans.filter(l=>l.status==='Canceled');
+  const cancelAmt = cancelLoans.reduce((s,l)=>s+l.amount,0);
+  const profit = completed.reduce((s,l)=>s+l.interest,0);
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat blue"><div class="stat-label">Total lent</div><div class="stat-val">${fmtShort(total)}</div><div class="stat-sub">${loans.length} loans total</div></div>
+    <div class="stat teal"><div class="stat-label">Collected</div><div class="stat-val">${fmtShort(collected)}</div><div class="stat-sub">${completed.length} completed</div></div>
+    <div class="stat amber"><div class="stat-label">Overdue</div><div class="stat-val">${fmtShort(overdueAmt)}</div><div class="stat-sub">${overdueLoans.length} loan${overdueLoans.length!==1?'s':''}</div></div>
+    <div class="stat blue"><div class="stat-label">In-Repayment</div><div class="stat-val">${fmtShort(repayAmt)}</div><div class="stat-sub">${repayLoans.length} active</div></div>
+    <div class="stat red"><div class="stat-label">Defaulted</div><div class="stat-val">${fmtShort(defAmt)}</div><div class="stat-sub">${defLoans.length} loan${defLoans.length!==1?'s':''}</div></div>
+    <div class="stat"><div class="stat-label">Canceled</div><div class="stat-val" style="color:var(--text2)">${fmtShort(cancelAmt)}</div><div class="stat-sub">${cancelLoans.length} loan${cancelLoans.length!==1?'s':''}</div></div>
+    <div class="stat purple"><div class="stat-label">Total interest</div><div class="stat-val">${fmtShort(totalInt)}</div><div class="stat-sub">across all loans</div></div>
+    <div class="stat green"><div class="stat-label">Profit earned</div><div class="stat-val">${fmtShort(profit)}</div><div class="stat-sub">from completed loans</div></div>
+  `;
+
+  const statuses=[
+    {k:'In-Repayment',label:'In-Repayment',col:'#185FA5'},
+    {k:'Completed',label:'Completed',col:'#3B6D11'},
+    {k:'Overdue',label:'Overdue',col:'#854F0B'},
+    {k:'Defaulted',label:'Defaulted',col:'#791F1F'},
+    {k:'Canceled',label:'Canceled',col:'#888780'},
+  ];
+  document.getElementById('status-chart').innerHTML = statuses.map(s=>{
+    const cnt = s.k==='Overdue' ? overdueLoans.length : loans.filter(l=>l.status===s.k&&!isOverdue(l)).length;
+    const pct = loans.length ? Math.round(cnt/loans.length*100) : 0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+        <span style="color:var(--text2)">${s.label}</span>
+        <span style="font-weight:500">${cnt} <span style="color:var(--text3);font-weight:400">(${pct}%)</span></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${s.col}"></div></div>
+    </div>`;
+  }).join('');
+
+  const collats=[{k:'Car',col:'#185FA5'},{k:'House',col:'#0F6E56'},{k:'TV',col:'#534AB7'},{k:'Laptop',col:'#854F0B'}];
+  document.getElementById('collat-chart').innerHTML = collats.map(c=>{
+    const cnt = loans.filter(l=>l.collat===c.k).length;
+    const pct = loans.length ? Math.round(cnt/loans.length*100) : 0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+        <span style="color:var(--text2)">${c.k}</span>
+        <span style="font-weight:500">${cnt} <span style="color:var(--text3);font-weight:400">(${pct}%)</span></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${c.col}"></div></div>
+    </div>`;
+  }).join('');
+
+  const recent = [...loans].reverse().slice(0,5);
+  document.getElementById('recent-list').innerHTML = recent.length ? recent.map(l=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:500">${l.name}</div>
+        <div style="font-size:11px;color:var(--text3)">${l.lid} &middot; ${dateStr(l.issued)} &middot; ${l.mgr}</div>
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="font-size:13px;font-weight:500">${fmt(l.amount)}</div>
+        ${statusBadge(l)}
+      </div>
+    </div>`).join('') : '<div class="empty"><div class="empty-title">No loans recorded yet.</div></div>';
+}
+
+// ─── LOANS TABLE ────────────────────────────────────────
+function renderMgrFilter(){
+  const mgrs = [...new Set(loans.map(l=>l.mgr))].sort();
+  const sel = document.getElementById('filter-mgr');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All managers</option>' + mgrs.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m}</option>`).join('');
+}
+
+function clearFilters(){
+  document.getElementById('search-input').value='';
+  document.getElementById('filter-status').value='';
+  document.getElementById('filter-collat').value='';
+  document.getElementById('filter-mgr').value='';
+  renderTable();
+}
+
+function renderTable(){
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const fs = document.getElementById('filter-status').value;
+  const fc = document.getElementById('filter-collat').value;
+  const fm = document.getElementById('filter-mgr').value;
+  const filtered = loans.filter((l,_i)=>{
+    if(q && !`${l.name} ${l.nid} ${l.lid} ${l.mgr}`.toLowerCase().includes(q)) return false;
+    if(fs){
+      if(fs==='Overdue' && !isOverdue(l)) return false;
+      if(fs!=='Overdue' && l.status!==fs) return false;
+    }
+    if(fc && l.collat!==fc) return false;
+    if(fm && l.mgr!==fm) return false;
+    return true;
+  });
+  document.getElementById('loans-count').textContent =
+    `Showing ${filtered.length} of ${loans.length} loan${loans.length!==1?'s':''}`;
+
+  if(!filtered.length){
+    document.getElementById('loans-body').innerHTML =
+      `<tr><td colspan="14" style="text-align:center;padding:40px;color:var(--text3)">No loans match the current filters.</td></tr>`;
+    return;
+  }
+  document.getElementById('loans-body').innerHTML = filtered.map(l=>{
+    const i = loans.indexOf(l);
+    const de = daysElapsed(l.issued);
+    const ov = isOverdue(l);
+    return `<tr class="${ov?'overdue-row':''}">
+      <td style="font-weight:500">${l.name}</td>
+      <td style="color:var(--text3);font-size:11px">${l.nid}</td>
+      <td style="font-size:11px">${l.lid}</td>
+      <td style="font-weight:500">${fmt(l.amount)}</td>
+      <td>${l.rate}%</td>
+      <td style="color:var(--green)">${fmt(l.interest)}</td>
+      <td style="font-size:11px">${dateStr(l.issued)}</td>
+      <td style="font-size:11px;${ov?'color:var(--amber);font-weight:500':''}">${dateStr(l.due)}</td>
+      <td style="font-size:11px;${ov?'color:var(--amber);font-weight:500':''}">${de}d${ov?' &#9888;':''}</td>
+      <td>${statusBadge(l)}</td>
+      <td><span class="collat-tag">${l.collat}</span></td>
+      <td style="font-size:12px">${l.mgr}</td>
+      <td style="font-size:11px;color:var(--text3)">${l.mgrid}</td>
+      <td style="display:flex;gap:5px">
+        <button class="btn btn-sm" onclick="openEdit(${i})" title="Edit">&#9998;</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteLoan(${i})" title="Delete">&#128465;</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── SAVE LOAN ──────────────────────────────────────────
+function saveLoan(){
+  const name = document.getElementById('f-name').value.trim();
+  const nid = document.getElementById('f-nid').value.trim();
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  const rate = parseFloat(document.getElementById('f-rate').value);
+  const issued = document.getElementById('f-issued').value;
+  const due = document.getElementById('f-due').value;
+  const mgr = document.getElementById('f-mgr').value.trim();
+  const mgrid = document.getElementById('f-mgrid').value.trim();
+  const alertEl = document.getElementById('add-alert');
+
+  if(!name||!nid||!amount||!rate||!issued||!due||!mgr||!mgrid){
+    alertEl.innerHTML='<div class="alert alert-error">&#9888; Please fill in all required fields.</div>';
+    window.scrollTo(0,0);return;
+  }
+  if(new Date(due+'T00:00:00') <= new Date(issued+'T00:00:00')){
+    alertEl.innerHTML='<div class="alert alert-error">&#9888; Due date must be after the issue date.</div>';
+    return;
+  }
+  const l = {
+    name, nid,
+    lid: document.getElementById('f-lid').value,
+    amount, rate,
+    interest: parseFloat((amount*rate/100).toFixed(2)),
+    issued, due,
+    status: document.getElementById('f-status').value,
+    collat: document.getElementById('f-collat').value,
+    mgr, mgrid
+  };
+  loans.push(l);
+  alertEl.innerHTML='';
+  ['f-name','f-nid','f-amount','f-rate','f-interest','f-issued','f-due','f-mgr','f-mgrid'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  showPage('loans');
+}
+
+// ─── EDIT / DELETE ──────────────────────────────────────
+function openEdit(i){
+  editIdx=i; const l=loans[i];
+  document.getElementById('edit-sub').textContent = `Editing: ${l.lid} — ${l.name}`;
+  document.getElementById('e-name').value=l.name;
+  document.getElementById('e-nid').value=l.nid;
+  document.getElementById('e-amount').value=l.amount;
+  document.getElementById('e-rate').value=l.rate;
+  document.getElementById('e-interest').value=l.interest.toFixed(2);
+  document.getElementById('e-issued').value=l.issued;
+  document.getElementById('e-due').value=l.due;
+  document.getElementById('e-status').value=l.status;
+  document.getElementById('e-collat').value=l.collat;
+  document.getElementById('e-mgr').value=l.mgr;
+  document.getElementById('e-mgrid').value=l.mgrid;
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEdit(){
+  document.getElementById('edit-modal').classList.remove('open');
+  editIdx=null;
+}
+
+function updateLoan(){
+  if(editIdx===null)return;
+  const l=loans[editIdx];
+  l.name=document.getElementById('e-name').value.trim()||l.name;
+  l.nid=document.getElementById('e-nid').value.trim();
+  l.amount=parseFloat(document.getElementById('e-amount').value)||l.amount;
+  l.rate=parseFloat(document.getElementById('e-rate').value)||l.rate;
+  l.interest=parseFloat((l.amount*l.rate/100).toFixed(2));
+  l.issued=document.getElementById('e-issued').value;
+  l.due=document.getElementById('e-due').value;
+  l.status=document.getElementById('e-status').value;
+  l.collat=document.getElementById('e-collat').value;
+  l.mgr=document.getElementById('e-mgr').value.trim();
+  l.mgrid=document.getElementById('e-mgrid').value.trim();
+  closeEdit(); renderTable();
+}
+
+function deleteLoan(i){
+  if(confirm(`Delete loan ${loans[i].lid} for ${loans[i].name}? This cannot be undone.`)){
+    loans.splice(i,1); renderTable(); renderMgrFilter();
+  }
+}
+
+function confirmDelete(){
+  closeEdit();
+  if(editIdx!==null) deleteLoan(editIdx);
+  editIdx=null;
+}
+
+// ─── EXPORT CSV ─────────────────────────────────────────
+function exportCSV(){
+  const headers=['Borrower Name','Identity ID','Loan ID','Amount (ZMW)','Rate (%)','Interest (ZMW)',
+    'Date Issued','Due Date','Days Elapsed','Status','Collateral','Credit Manager','Manager ID'];
+  const rows=loans.map(l=>[
+    l.name,l.nid,l.lid,l.amount,l.rate,l.interest,
+    l.issued,l.due,daysElapsed(l.issued),effectiveStatus(l),l.collat,l.mgr,l.mgrid
+  ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`LoanTrack_Export_${today.toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+// ─── INIT ───────────────────────────────────────────────
+document.getElementById('sidebar-date').textContent =
+  today.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+renderDashboard();
+</script>
+</body>
+</html>
