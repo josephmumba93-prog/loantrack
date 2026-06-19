@@ -416,10 +416,15 @@ async function doLogin(){
   setBtnLoading('login-btn',true);
   document.getElementById('login-loading').style.display='block';
   try{
+    console.log('STEP 1: Attempting sign in for', email);
     const {data,error} = await sb.auth.signInWithPassword({email,password:pass});
+    console.log('STEP 1 RESULT — data:', data, 'error:', error);
     if(error) throw error;
+    console.log('STEP 2: Auth succeeded. User ID is', data.user.id);
+    console.log('STEP 2b: Current session check:', await sb.auth.getSession());
     const {data:profile,error:perr} = await sb.from('users').select('*').eq('auth_id',data.user.id).single();
-    if(perr || !profile){ throw new Error('Your login worked, but no role is linked to this account yet. Ask the Director to link your account in the users table.'); }
+    console.log('STEP 3 RESULT — profile:', profile, 'error:', perr);
+    if(perr || !profile){ throw new Error('DEBUG: '+(perr ? (perr.message+' | code:'+perr.code+' | details:'+perr.details) : 'No profile object returned')); }
     if(!profile.active){ throw new Error('This account has been disabled. Contact your Director.'); }
     currentUser = profile;
     await logAudit('LOGIN','User signed in',`${profile.name} (${profile.role})`);
